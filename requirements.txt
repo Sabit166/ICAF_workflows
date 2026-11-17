@@ -1,0 +1,8 @@
+pymupdf>=1.24      # PDF rendering, text layer, crops (AGPL-3.0)
+pillow>=10         # image sizes and JPEG/PNG saving
+numpy>=1.26        # coverage maths in check-page.py
+python-docx>=1.1   # review file and book .docx
+jsonschema>=4.20   # checks every JSON file against config/schema.json
+bijoy2unicode==0.1.1  # Bijoy/SutonnyMJ to Unicode table (MIT, Rajib Biswas), used only by common.bijoy_to_unicode()
+# optional, only when WF_book_extraction/config/ocr.json has enabled: true
+# google-cloud-vision

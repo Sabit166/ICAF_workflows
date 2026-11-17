@@ -1,0 +1,314 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WF_book_extraction file shapes",
+  "description": "One definition per kind of file. Positions are pixels of the page render, box is [left, top, right, bottom]. The kind of a file comes from its path and name (see common.py kind_of).",
+  "$defs": {
+    "box": {
+      "type": "array", "items": {"type": "number", "minimum": 0}, "minItems": 4, "maxItems": 4
+    },
+    "hex_color": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"},
+    "text_id": {"type": "string", "pattern": "^t[0-9]+$"},
+    "image_id": {"type": "string", "pattern": "^i[0-9]+$"},
+    "block_id": {"type": "string", "pattern": "^[ti][0-9]+$"},
+    "lang": {"type": "string", "pattern": "^[a-z]{2,3}$"},
+    "size": {
+      "type": "object", "additionalProperties": false, "required": ["width", "height"],
+      "properties": {"width": {"type": "integer", "minimum": 1}, "height": {"type": "integer", "minimum": 1}}
+    },
+    "string_list": {"type": "array", "items": {"type": "string"}},
+    "font": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "size_pt", "bold", "italic", "color"],
+      "properties": {
+        "name": {"type": "string"},
+        "size_pt": {"type": "number", "exclusiveMinimum": 0},
+        "bold": {"type": "boolean"},
+        "italic": {"type": "boolean"},
+        "color": {"$ref": "#/$defs/hex_color"}
+      }
+    },
+    "text_type": {"enum": ["heading", "body", "caption", "label", "table_text", "other"]},
+    "align": {"enum": ["left", "center", "right", "justify"]},
+    "text_status": {"enum": ["agreed", "voted", "unsure"]},
+    "image_kind": {"enum": ["picture", "photo", "drawing", "diagram", "chart", "graph", "table", "map", "timeline", "infographic", "maths_model", "model", "parse_tree", "concept_map", "screenshot", "icon", "shape", "other"]},
+    "other_readings": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["reader", "text"],
+        "properties": {"reader": {"enum": ["text_a", "text_b", "text_c", "pdf", "ocr"]}, "text": {"type": "string"}}
+      }
+    },
+    "background": {
+      "type": "object", "additionalProperties": false,
+      "required": ["color", "summary", "description", "rebuild_notes", "boxes"],
+      "properties": {
+        "color": {"$ref": "#/$defs/hex_color"},
+        "summary": {"type": "string", "minLength": 1},
+        "description": {"type": "string", "minLength": 1},
+        "rebuild_notes": {"type": "string"},
+        "boxes": {"type": "array", "items": {"$ref": "#/$defs/box"}}
+      }
+    },
+    "image_core": {
+      "type": "object",
+      "required": ["id", "box", "kind", "summary", "description", "purpose", "style", "main_colors", "layer", "rotation_deg", "opacity", "rebuild_notes"],
+      "properties": {
+        "id": {"$ref": "#/$defs/image_id"},
+        "box": {"$ref": "#/$defs/box"},
+        "kind": {"$ref": "#/$defs/image_kind"},
+        "summary": {"type": "string", "minLength": 1},
+        "description": {"type": "string", "minLength": 1},
+        "purpose": {"type": "string", "minLength": 1},
+        "style": {"type": "string"},
+        "main_colors": {"type": "array", "items": {"$ref": "#/$defs/hex_color"}},
+        "layer": {"type": "integer"},
+        "rotation_deg": {"type": "number"},
+        "opacity": {"type": "number", "minimum": 0, "maximum": 1},
+        "rebuild_notes": {"type": "string"}
+      }
+    },
+    "layout_block": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "type", "lang", "box", "font", "align", "order"],
+      "properties": {
+        "id": {"$ref": "#/$defs/text_id"},
+        "type": {"$ref": "#/$defs/text_type"},
+        "lang": {"$ref": "#/$defs/lang"},
+        "box": {"$ref": "#/$defs/box"},
+        "font": {"$ref": "#/$defs/font"},
+        "align": {"$ref": "#/$defs/align"},
+        "order": {"type": "integer", "minimum": 1}
+      }
+    },
+    "page_text_block": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "type", "lang", "text", "text_status", "box", "font", "align", "order", "read_agreement", "other_readings"],
+      "properties": {
+        "id": {"$ref": "#/$defs/text_id"},
+        "type": {"$ref": "#/$defs/text_type"},
+        "lang": {"$ref": "#/$defs/lang"},
+        "text": {"type": "string"},
+        "text_status": {"$ref": "#/$defs/text_status"},
+        "box": {"$ref": "#/$defs/box"},
+        "font": {"$ref": "#/$defs/font"},
+        "align": {"$ref": "#/$defs/align"},
+        "order": {"type": "integer", "minimum": 1},
+        "read_agreement": {"type": "number", "minimum": 0, "maximum": 1},
+        "other_readings": {"$ref": "#/$defs/other_readings"}
+      }
+    },
+    "review": {
+      "type": "object", "additionalProperties": false,
+      "required": ["confidence", "coverage", "text_agreement", "tries", "leftover_spots", "checker_notes"],
+      "properties": {
+        "confidence": {"type": "integer", "minimum": 0, "maximum": 100},
+        "coverage": {"type": "number", "minimum": 0, "maximum": 1},
+        "text_agreement": {"type": "number", "minimum": 0, "maximum": 1},
+        "tries": {"enum": [1, 2]},
+        "leftover_spots": {"type": "array", "items": {"$ref": "#/$defs/box"}},
+        "checker_notes": {"type": "string"}
+      }
+    },
+
+    "context": {
+      "type": "object", "additionalProperties": false,
+      "required": ["page_type", "printed_page_number", "heading_ids", "running_header_ids", "running_footer_ids", "reading_flow", "links", "languages", "layout_summary"],
+      "properties": {
+        "page_type": {"enum": ["cover", "contents", "lesson", "exercise", "answer_key", "index", "blank", "other"]},
+        "printed_page_number": {"type": "string"},
+        "heading_ids": {"type": "array", "items": {"$ref": "#/$defs/text_id"}},
+        "running_header_ids": {"type": "array", "items": {"$ref": "#/$defs/text_id"}},
+        "running_footer_ids": {"type": "array", "items": {"$ref": "#/$defs/text_id"}},
+        "reading_flow": {"type": "array", "items": {"$ref": "#/$defs/block_id"}},
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["from", "to", "relation"],
+            "properties": {
+              "from": {"$ref": "#/$defs/block_id"},
+              "to": {"$ref": "#/$defs/block_id"},
+              "relation": {"enum": ["caption_of", "label_of", "continues", "answer_to", "part_of"]}
+            }
+          }
+        },
+        "languages": {"type": "array", "items": {"$ref": "#/$defs/lang"}},
+        "layout_summary": {"type": "string"}
+      }
+    },
+
+    "page": {
+      "type": "object", "additionalProperties": false,
+      "required": ["page", "size", "background", "text_blocks", "images", "context", "unknown_words", "doubts"],
+      "properties": {
+        "page": {"type": "integer", "minimum": 1},
+        "size": {"$ref": "#/$defs/size"},
+        "background": {"$ref": "#/$defs/background"},
+        "text_blocks": {"type": "array", "items": {"$ref": "#/$defs/page_text_block"}},
+        "images": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {"$ref": "#/$defs/image_core"},
+              {
+                "type": "object", "required": ["file", "overlaps_text"],
+                "properties": {
+                  "id": true, "box": true, "kind": true, "summary": true, "description": true, "purpose": true,
+                  "style": true, "main_colors": true, "layer": true, "rotation_deg": true, "opacity": true, "rebuild_notes": true,
+                  "file": {"type": "string", "pattern": "^images/page_[0-9]{3,}_i[0-9]+\\.(jpg|png)$"},
+                  "overlaps_text": {"type": "array", "items": {"$ref": "#/$defs/text_id"}}
+                },
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "context": {"$ref": "#/$defs/context"},
+        "unknown_words": {"$ref": "#/$defs/string_list"},
+        "doubts": {"$ref": "#/$defs/string_list"},
+        "review": {"$ref": "#/$defs/review"}
+      }
+    },
+
+    "failed_page": {
+      "type": "object", "additionalProperties": false, "required": ["page", "failed", "note"],
+      "properties": {"page": {"type": "integer", "minimum": 1}, "failed": {"const": true}, "note": {"type": "string"}}
+    },
+
+    "book": {
+      "type": "object", "additionalProperties": false, "required": ["book", "source_pdf", "page_count", "pages"],
+      "properties": {
+        "book": {"type": "string", "minLength": 1},
+        "source_pdf": {"type": "string", "minLength": 1},
+        "page_count": {"type": "integer", "minimum": 0},
+        "pages": {"type": "array", "items": {"oneOf": [{"$ref": "#/$defs/page"}, {"$ref": "#/$defs/failed_page"}]}}
+      }
+    },
+
+    "book_info": {
+      "type": "object", "additionalProperties": false, "required": ["pages", "pdf_sha256"],
+      "properties": {
+        "pdf_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "pages": {
+          "type": "object",
+          "propertyNames": {"pattern": "^page_[0-9]{3,}$"},
+          "additionalProperties": {
+            "type": "object", "additionalProperties": false, "required": ["width", "height", "scale", "file_size_kb"],
+            "properties": {
+              "width": {"type": "integer", "minimum": 1}, "height": {"type": "integer", "minimum": 1},
+              "scale": {"type": "number", "exclusiveMinimum": 0}, "file_size_kb": {"type": "number", "minimum": 0}
+            }
+          }
+        }
+      }
+    },
+
+    "pdf_words": {
+      "type": "object", "additionalProperties": false, "required": ["pages"],
+      "properties": {
+        "pages": {
+          "type": "object",
+          "propertyNames": {"pattern": "^page_[0-9]{3,}$"},
+          "additionalProperties": {
+            "type": "object", "additionalProperties": false, "required": ["words", "bijoy", "doubt"],
+            "properties": {
+              "words": {
+                "type": "array",
+                "items": {
+                  "type": "object", "additionalProperties": false, "required": ["text", "box"],
+                  "properties": {"text": {"type": "string"}, "box": {"$ref": "#/$defs/box"}, "bijoy": {"type": "boolean"}}
+                }
+              },
+              "bijoy": {"type": "boolean"},
+              "doubt": {"type": "boolean"}
+            }
+          }
+        }
+      }
+    },
+
+    "layout": {
+      "type": "object", "additionalProperties": false, "required": ["size", "text_blocks"],
+      "properties": {
+        "size": {"$ref": "#/$defs/size"},
+        "text_blocks": {"type": "array", "items": {"$ref": "#/$defs/layout_block"}},
+        "doubts": {"$ref": "#/$defs/string_list"}
+      }
+    },
+
+    "images": {
+      "type": "object", "additionalProperties": false, "required": ["background", "images"],
+      "properties": {
+        "background": {"$ref": "#/$defs/background"},
+        "images": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {"$ref": "#/$defs/image_core"},
+              {
+                "type": "object",
+                "properties": {
+                  "id": true, "box": true, "kind": true, "summary": true, "description": true, "purpose": true,
+                  "style": true, "main_colors": true, "layer": true, "rotation_deg": true, "opacity": true, "rebuild_notes": true
+                },
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "doubts": {"$ref": "#/$defs/string_list"}
+      }
+    },
+
+    "reader_answer": {
+      "type": "object",
+      "propertyNames": {"pattern": "^t[0-9]+$"},
+      "additionalProperties": {"type": "string"}
+    },
+
+    "votes": {
+      "type": "object", "additionalProperties": false, "required": ["blocks", "unknown_words", "doubts", "needs_human"],
+      "properties": {
+        "blocks": {
+          "type": "object",
+          "propertyNames": {"pattern": "^t[0-9]+$"},
+          "additionalProperties": {
+            "type": "object", "additionalProperties": false, "required": ["text_status", "read_agreement", "other_readings"],
+            "properties": {
+              "text_status": {"$ref": "#/$defs/text_status"},
+              "read_agreement": {"type": "number", "minimum": 0, "maximum": 1},
+              "other_readings": {"$ref": "#/$defs/other_readings"},
+              "bijoy_converted": {"type": "boolean"},
+              "lang": {"$ref": "#/$defs/lang"}
+            }
+          }
+        },
+        "unknown_words": {"$ref": "#/$defs/string_list"},
+        "doubts": {"$ref": "#/$defs/string_list"},
+        "needs_human": {"type": "array", "items": {"$ref": "#/$defs/text_id"}}
+      }
+    },
+
+    "leftovers": {
+      "type": "object", "additionalProperties": false, "required": ["spots"],
+      "properties": {"spots": {"type": "array", "items": {"$ref": "#/$defs/box"}}}
+    },
+
+    "ocr": {
+      "type": "object", "additionalProperties": false, "required": ["words"],
+      "properties": {
+        "words": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["text", "box", "confidence"],
+            "properties": {"text": {"type": "string"}, "box": {"$ref": "#/$defs/box"}, "confidence": {"type": "number", "minimum": 0, "maximum": 1}}
+          }
+        }
+      }
+    },
+
+    "try_scores": {
+      "type": "object", "additionalProperties": false, "required": ["confidence", "coverage", "text_agreement"],
+      "properties": {"confidence": {"type": "string"}, "coverage": {"type": "string"}, "text_agreement": {"type": "string"}}
+    }
+  }
+}

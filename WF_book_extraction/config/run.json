@@ -1,0 +1,15 @@
+{
+  "batch_size": 20,
+  "max_parallel": 20,
+  "pilot_pages": 5,
+  "tries": 2,
+  "scores": {
+    "confidence": {"good": 95, "low": 90},
+    "coverage": {"good": 0.98, "low": 0.95},
+    "text_agreement": {"good": 0.99, "low": 0.97}
+  },
+  "stop_after_same_note": 3,
+  "spot_check": {"first_pages": 50, "every_in_first": 5, "every_after": 20},
+  "log_lock": {"wait_s": 30, "stale_s": 60},
+  "rate_limit": {"wait_s": 30, "max_wait_s": 300, "max_retries": 3}
+}

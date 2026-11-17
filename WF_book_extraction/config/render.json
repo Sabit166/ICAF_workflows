@@ -1,0 +1,6 @@
+{
+  "page_render": {"long_side_px": 1600, "min_long_side_px": 1400, "jpeg_quality": 85, "min_jpeg_quality": 60, "max_kb": 500},
+  "block_crop": {"dpi": 300, "padding_px": 10},
+  "image_crop": {"dpi": 200, "padding_px": 5, "jpeg_quality": 90, "min_jpeg_quality": 70, "min_long_side_px": 1200, "max_kb": 1024,
+                 "jpeg_kinds": ["picture", "photo", "drawing", "icon", "shape", "other"]}
+}

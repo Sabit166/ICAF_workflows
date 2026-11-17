@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "model": "claude-haiku-5-5",
+  "effortLevel": "medium",
+  "permissions": {
+    "allow": [
+      "Read",
+      "Edit(/WF_*/temp/**)",
+      "Bash(python shared/scripts/*)",
+      "Bash(python WF_book_extraction/scripts/*)",
+      "PowerShell(python shared/scripts/*)",
+      "PowerShell(python WF_book_extraction/scripts/*)"
+    ],
+    "deny": [
+      "Edit(/input/**)",
+      "Edit(/WF_*/output/**)",
+      "Edit(/WF_*/config/schema.json)",
+      "Bash(git commit)",
+      "Bash(git commit *)",
+      "Bash(git push)",
+      "Bash(git push *)",
+      "PowerShell(git commit)",
+      "PowerShell(git commit *)",
+      "PowerShell(git push)",
+      "PowerShell(git push *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/protect-folders.py\"",
+            "onFailure": "block"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/check-schema.py\""
+          }
+        ]
+      }
+    ]
+  }
+}
